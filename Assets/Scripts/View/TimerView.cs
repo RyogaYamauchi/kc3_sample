@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,17 +15,23 @@ namespace View
         [SerializeField]
         private string _maxTime = default;
 
+
         private void Start()
         {
             SetStartTime();
+            StartCoroutine(StartTimer(int.Parse(_maxTime)));
         }
 
         private void SetStartTime()
         {
-            var time = FormatTime(int.Parse(_maxTime));
-            _time.text = time;
+            UpdateTime(int.Parse(_maxTime));
         }
-        
+
+        private void UpdateTime(int time)
+        {
+            _time.text = FormatTime(time);
+        }
+
         // 時間ようにフォーマットするだけ
         private string FormatTime(int time)
         {
@@ -33,6 +40,15 @@ namespace View
             var minString = min < 10 ? $"0{min}" : $"{min}";
             var secString = sec < 10 ? $"0{sec}" : $"{sec}";
             return $"{minString}:{secString}";
+        }
+
+        private IEnumerator StartTimer(int num)
+        {
+            for (var i = num; i >= 0; i--)
+            {
+                UpdateTime(i);
+                yield return new WaitForSeconds(1.0f);
+            }
         }
     }
 }
