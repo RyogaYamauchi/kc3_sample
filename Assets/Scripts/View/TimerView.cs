@@ -1,13 +1,16 @@
-using System.Collections;
+using System.Threading;
+using Controller;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
+using Zenject;
 
 namespace View
 {
     public class TimerView : MonoBehaviour
     {
         [SerializeField]
-        private Text _time = default;
+        private Text _timeText = default;
 
         [SerializeField]
         private Button _startButton = default;
@@ -15,24 +18,16 @@ namespace View
         [SerializeField]
         private string _maxTime = default;
 
+        private TimerController _controller;
 
         private void Start()
         {
-            SetStartTime();
-            StartCoroutine(StartTimer(int.Parse(_maxTime)));
+            _controller = new TimerController(this);
+            var time = int.Parse(_maxTime);
+            _startButton.onClick.AddListener(() => { StartCoroutine(_controller.StartTime(time)); });
         }
 
-        private void SetStartTime()
-        {
-            UpdateTime(int.Parse(_maxTime));
-        }
-
-        private void UpdateTime(int time)
-        {
-            _time.text = FormatTime(time);
-        }
-
-        // 時間ようにフォーマットするだけ
+        // 時間用にフォーマットする
         private string FormatTime(int time)
         {
             var min = time / 60;
@@ -42,13 +37,21 @@ namespace View
             return $"{minString}:{secString}";
         }
 
-        private IEnumerator StartTimer(int num)
+        public void OnUpdateTime(int time)
         {
-            for (var i = num; i >= 0; i--)
-            {
-                UpdateTime(i);
-                yield return new WaitForSeconds(1.0f);
-            }
+            _timeText.text = FormatTime(time);
+        }
+
+        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private CancellationToken _cancellationToken => _cancellationTokenSource.Token;
+        public async UniTask Wait()
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update, _cancellationToken);
+        }
+
+        public void Cancel()
+        {
+            _cancellationTokenSource.Cancel();
         }
     }
 }
